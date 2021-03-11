@@ -20,6 +20,20 @@ services:
     environment:
       - "DB_HOST=db"
       - "WEB_HOST=0.0.0.0"
+    ports:
+      - "8080:8080"
+    command: java -javaagent:/dd-java-agent.jar -jar app.jar
+    depends_on:
+      - db
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "55680:55680"
+    environment:
       - DD_AGENT_HOST=datadog
       - DATADOG_HOST=datadog
       - DD_ENV=local
@@ -28,19 +42,12 @@ services:
       - DD_PROFILING_ENABLED=true
       - DD_LOGS_INJECTION=true
       - DD_VERSION=1.0.0
-      - SERVICE_NAME=james-spike-day-webshop
-    labels:
-      - com.datadoghq.tags.env=local
-      - com.datadoghq.tags.service=james-spike-day-webshopa
-      - com.datadoghq.tags.version=1.0.0
-    ports:
-      - "8080:8080"
-    command: java -javaagent:/dd-java-agent.jar -jar app.jar
-    depends_on:
-      - db
+    links:
+      - clj
 
   datadog:
     links:
+     - otel-collector
      - clj
      - db
     image: gcr.io/datadoghq/agent:latest

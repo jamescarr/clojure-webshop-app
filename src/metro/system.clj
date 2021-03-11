@@ -32,5 +32,10 @@
          (pedestal/new-pedestal)
          [:db :service-map])))
 
+(def exporter (build-exporter-jaeger "test-service-name" "otel-collector" "55680"))
+(def span-processor (build-simple-span-processor exporter))
+(def open-telemetry (init-open-telemetry exporter))
+(def tracer (get-tracer open-telemetry "test.tracing"))
+
 (defn -main [& args]
   (component/start (system {})))
