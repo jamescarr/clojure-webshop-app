@@ -10,6 +10,8 @@ services:
       - "POSTGRES_PASSWORD=clojure"
       - "POSTGRES_USER=clojure"
       - "POSTGRES_DB=clojure"
+      - "DATADOG_HOST=datadog"
+      - "DD_ENV=local"
 
   clj:
     build:
@@ -18,8 +20,38 @@ services:
     environment:
       - "DB_HOST=db"
       - "WEB_HOST=0.0.0.0"
+      - DD_AGENT_HOST=datadog
+      - DATADOG_HOST=datadog
+      - DD_ENV=local
+      - DD_SERVICE=james-spike-day-webshop
+      - DD_TRACE_AGENT_PORT="8126"
+      - DD_PROFILING_ENABLED=true
+      - DD_LOGS_INJECTION=true
+      - DD_VERSION=1.0.0
+      - SERVICE_NAME=james-spike-day-webshop
+    labels:
+      - com.datadoghq.tags.env=local
+      - com.datadoghq.tags.service=james-spike-day-webshopa
+      - com.datadoghq.tags.version=1.0.0
     ports:
       - "8080:8080"
-    command: java -jar app.jar
+    command: java -javaagent:/dd-java-agent.jar -jar app.jar
     depends_on:
       - db
+
+  datadog:
+    links:
+     - clj
+     - db
+    image: gcr.io/datadoghq/agent:latest
+    ports:
+      - 8126:8126/tcp
+    environment:
+     - DD_API_KEY=${DD_API_KEY}
+     - DD_SITE=datadoghq.com
+     - DD_APM_NON_LOCAL_TRAFFIC=true
+     - DD_APM_ENABLED=true 
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock
+     - /proc/:/host/proc/:ro
+     - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
